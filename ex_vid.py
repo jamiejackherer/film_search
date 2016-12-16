@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+import os
+import queue
+import threading
+import sys
+import getopt
+import requests
+import json
+import time
 import re
 import requests
 import jsbeautifier
@@ -32,3 +40,72 @@ link_re = pattern.findall(js)
 for x in link_re:
     link = x
     print("[+] We found a link;\n\t{0}".format(link))
+    
+
+#Downloader class - reads queue and downloads each file in succession
+class Downloader(threading.Thread):
+    """Threaded File Downloader"""
+
+    def __init__(self, queue, output_directory):
+            threading.Thread.__init__(self,name= os.urandom(16).encode('hex'))
+            self.queue = queue
+            self.output_directory = output_directory
+
+    def run(self):
+        while True:
+            # gets the url from the queue
+            url = self.queue.get()
+
+            # download the file
+            print("* Thread {0} - processing URL".format(self.name))
+            self.download_file(url)
+
+            # send a signal to the queue that the job is done
+            self.queue.task_done()
+
+    def download_file(self, url):
+        t_start = time.clock()
+
+        r = requests.get(url)
+        if (r.status_code == requests.codes.ok):
+            t_elapsed = time.clock() - t_start
+            print("* Thread: {0} Downloaded {1} in {2} seconds".format(self.name, url, str(t_elapsed)))
+            fname = self.output_directory + "/" + os.path.basename(url)
+
+            with open(fname, "wb") as f:
+                f.write(r.content)
+        else:
+            print("* Thread: {0} Bad URL: {1}".format(self.name, url))
+
+# Spawns dowloader threads and manages URL downloads queue
+class DownloadManager():
+
+    def __init__(self, download_dict, output_directory, thread_count=5):
+        self.thread_count = thread_count
+        self.download_dict = download_dict
+        self.output_directory = output_directory
+
+    # Start the downloader threads, fill the queue with the URLs and
+    # then feed the threads URLs via the queue
+    def begin_downloads(self):
+        queue = queue.queue()
+
+        # Create a thread pool and give them a queue
+        for i in range(self.thread_count):
+            t = Downloader(queue, self.output_directory)
+            t.setDaemon(True)
+            t.start()
+
+        # Load the queue from the download dict
+        for linkname in self.download_dict:
+            #print uri
+            queue.put(self.download_dict[linkname])
+
+        # Wait for the queue to finish
+        queue.join()
+
+        return
+
+
+download_manager = DownloadManager(link, "/mp4_dls", 5)
+download_manager.begin_downloads()
