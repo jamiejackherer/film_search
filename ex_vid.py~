@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-import queue
+
 import threading
 import sys
 import getopt
@@ -9,14 +9,13 @@ import requests
 import json
 import time
 import re
-import requests
 import jsbeautifier
 from bs4 import BeautifulSoup as bs
 
 url = "http://vidzi.tv/15vzx7hzbu76.html"
 #url = "http://vidto.me/jd45t9kk820k.html"
 #url = input("[+] Please enter the url to extract the video from: ")
-print("[+] Using url\n", url)
+print(("[+] Using url\n", url))
 print("[+] Fetching webpage")
 
 headers = {"User-Agent": "Mozilla/5.0 (Linux; U; Android 4.4.4; Nexus 5 Build/KTU84P) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"}
@@ -35,11 +34,11 @@ js = jsbeautifier.beautify(str(ob_js.text))
 print(js)
 print("[+] Regexing a link")
 
-pattern = re.compile(u"(http.*(?:\.mp4))")
+pattern = re.compile("(http.*(?:\.mp4))")
 link_re = pattern.findall(js)
 for x in link_re:
     link = x
-    print("[+] We found a link;\n\t{0}".format(link))
+    print(("[+] We found a link;\n\t{0}".format(link)))
     
 
 #Downloader class - reads queue and downloads each file in succession
@@ -57,7 +56,7 @@ class Downloader(threading.Thread):
             url = self.queue.get()
 
             # download the file
-            print("* Thread {0} - processing URL".format(self.name))
+            print(("* Thread {0} - processing URL".format(self.name)))
             self.download_file(url)
 
             # send a signal to the queue that the job is done
@@ -69,13 +68,13 @@ class Downloader(threading.Thread):
         r = requests.get(url)
         if (r.status_code == requests.codes.ok):
             t_elapsed = time.clock() - t_start
-            print("* Thread: {0} Downloaded {1} in {2} seconds".format(self.name, url, str(t_elapsed)))
+            print(("* Thread: {0} Downloaded {1} in {2} seconds".format(self.name, url, str(t_elapsed))))
             fname = self.output_directory + "/" + os.path.basename(url)
 
             with open(fname, "wb") as f:
                 f.write(r.content)
         else:
-            print("* Thread: {0} Bad URL: {1}".format(self.name, url))
+            print(("* Thread: {0} Bad URL: {1}".format(self.name, url)))
 
 # Spawns dowloader threads and manages URL downloads queue
 class DownloadManager():
@@ -88,7 +87,8 @@ class DownloadManager():
     # Start the downloader threads, fill the queue with the URLs and
     # then feed the threads URLs via the queue
     def begin_downloads(self):
-        queue = queue.queue()
+        import queue
+        queue = queue.Queue()
 
         # Create a thread pool and give them a queue
         for i in range(self.thread_count):
@@ -107,5 +107,5 @@ class DownloadManager():
         return
 
 
-download_manager = DownloadManager(link, "mp4_dls", 5)
+download_manager = DownloadManager(link, "/mp4_dls", 5)
 download_manager.begin_downloads()

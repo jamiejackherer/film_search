@@ -34,7 +34,7 @@ js = jsbeautifier.beautify(str(ob_js.text))
 print(js)
 print("[+] Regexing a link")
 
-pattern = re.compile("(http.*(?:\.mp4))")
+pattern = re.compile(u"(http.*(?:\.mp4))")
 link_re = pattern.findall(js)
 for x in link_re:
     link = x
