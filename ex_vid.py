@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 
-import os
-
-import threading
-import sys
-import getopt
-import requests
-import json
-import time
-import re
+import re, os, time, requests, threading, binascii
 import jsbeautifier
 from bs4 import BeautifulSoup as bs
 
 url = "http://vidzi.tv/15vzx7hzbu76.html"
-#url = "http://vidto.me/jd45t9kk820k.html"
-#url = input("[+] Please enter the url to extract the video from: ")
+# url = "http://vidto.me/jd45t9kk820k.html"
+# url = input("[+] Please enter the url to extract the video from: ")
 print("[+] Using url\n", url)
 print("[+] Fetching webpage")
 
@@ -22,13 +14,13 @@ headers = {"User-Agent": "Mozilla/5.0 (Linux; U; Android 4.4.4; Nexus 5 Build/KT
 r = requests.get(url, headers=headers)
 
 s = bs(r.text, "lxml")
-#print(s)
+
 print("[+] Finding javascript in page")
 find_js = s.find("script", attrs={"type": "text/javascript", "src": "http://static.vidzi.tv/nplayer/jwplayer.js"})
-#print(find_js.text)
+
 print("[+] Finding next sibling in page")
 ob_js = find_js.find_next_sibling()
-#print(ob_js.text)
+
 print("[+] Deobfuscating javascript")
 js = jsbeautifier.beautify(str(ob_js.text))
 print(js)
@@ -39,14 +31,19 @@ link_re = pattern.findall(js)
 for x in link_re:
     link = x
     print("[+] We found a link;\n\t{0}".format(link))
-    
 
-#Downloader class - reads queue and downloads each file in succession
+# TODO get a title for the video
+download_dict = [{"link_name": "get_title.mp4", 
+                  "link_address": link},]
+
+
+# Downloader class - reads queue and downloads each file in succession
 class Downloader(threading.Thread):
     """Threaded File Downloader"""
 
     def __init__(self, queue, output_directory):
-            threading.Thread.__init__(self,name= os.urandom(16).encode('hex'))
+            threading.Thread.__init__(self, name=binascii.hexlify(os.urandom(16))) 
+            # might need to append .decode() for str obj not bytes obj
             self.queue = queue
             self.output_directory = output_directory
 
@@ -98,7 +95,7 @@ class DownloadManager():
 
         # Load the queue from the download dict
         for linkname in self.download_dict:
-            #print uri
+            # print(uri)
             queue.put(self.download_dict[linkname])
 
         # Wait for the queue to finish
